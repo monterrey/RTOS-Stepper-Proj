@@ -51,6 +51,7 @@ QueueHandle_t xQueue;
 int hexSSD[] = {63,6,91,79,102,109,125,71,127,103,95,128,89,30,121,113, 51};
 //Function Declarations 
 int degreeToStep(int val);
+int getState(int dipSwitchState);
 void OneStep(bool dir);
 void setLEDS(int num, bool right);
 double readSensor(double* temperature);
@@ -67,7 +68,7 @@ TickType_t dipDelay = 500 / portTICK_PERIOD_MS;
 void clockTask( void *pvParameters );
 void displayTask( void *pvParameters);
 void mainController( void *pvParameters);
-void tempHumidController(void *pvParameters);
+//void tempHumidController(void *pvParameters);
 void stepperController(void *pvParameters);
 void dipswitchController(void *pvParameters);
 // Struct contains
@@ -150,6 +151,7 @@ xQueue = xQueueCreate(10,sizeof(SSDStruct *));
     , NULL
     , 2
     , NULL);
+    /* 
     // This task reads Temperature/ Humidity data from sensor
       xTaskCreate(
     tempHumidController
@@ -157,7 +159,8 @@ xQueue = xQueueCreate(10,sizeof(SSDStruct *));
     , 128
     , NULL
     , 1
-    , &xHandleTempHumid);
+    , &xHandleTempHumid);*/
+
     // This task controlls stepper motor
       xTaskCreate(
     stepperController
@@ -199,7 +202,10 @@ void mainController( void *pvParameters){
   (void) pvParameters;
   int tempVal =0 , humidityVal = 0, state = dipState , stepperState = 0;
   bool blockState = false;
+  double temperature;
+  double humidity;
   for(;;){
+      humidity = readSensor(&temperature);
     if(state != dipState){
     if(state >= 8 ){
       //vTaskSuspend(xHandleTempHumid);
@@ -229,7 +235,7 @@ void mainController( void *pvParameters){
     vTaskDelay(500);
   }
 }
-// TempHumidController has Three possible states send Humidity , send Temp or block
+/*  TempHumidController has Three possible states send Humidity , send Temp or block
 void tempHumidController( void *pvParameters){
   (void) pvParameters;
   double temperature;
@@ -243,7 +249,7 @@ void tempHumidController( void *pvParameters){
   }
   vTaskDelay(200);
   }
-}
+}*/
 
 // Stepper has four possible states Moving to certain val, rotate clockwise, rotate counter
 // clockwise or block 
@@ -378,6 +384,20 @@ int degreeToStep(int val){
   Serial.println(value);
 
   return value;
+}
+int getState(int dipSwitchState){
+  int currentDip = 128,i;
+  for(i = 0 ; i< 8; i++){
+    if((currentDip >> i & dipSwitchState ) == 0){
+      break;
+    }
+  }
+  if(8-i != 5){
+    return 8-i;
+  } else{
+    //check second pin too
+    return i;
+  }
 }
 void intToSSD(int value ){
   SSDStruct myStruct;
