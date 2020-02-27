@@ -82,7 +82,6 @@ SSDStruct defaultDisp;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-  Serial.begin(9600);
      //Initialize I2C Communication
   Wire.begin();
   Serial.begin(9600);
@@ -242,7 +241,7 @@ void tempHumidController( void *pvParameters){
   }else if(currentState == 1){
     tempHumidVal = temperature;
   }
-  vTaskDelay(1);
+  vTaskDelay(200);
   }
 }
 
@@ -254,14 +253,16 @@ void stepperController( void *pvParameters){
   int targetStep = 0, stepDiff = 0,i;
   bool clockwise;
   for ( ; ; ){
-           // Serial.println(tempHumidVal);
+    OneStep(clockwise);
+    vTaskDelay(1);
+           /*// Serial.println(tempHumidVal);
     if(currentState == 0 || currentState == 1){
-      targetStep = degreeToStep(tempHumidVal);
+      targetStep = (int)  degreeToStep(tempHumidVal);
       stepDiff = targetStep - currentStep;
       if(stepDiff <0 ){
       clockwise = true;
       stepDiff = stepDiff * -1;
-      Serial.println(targetStep);
+      //Serial.println(targetStep);
       }else{
         clockwise = false;
       }
@@ -289,7 +290,7 @@ void stepperController( void *pvParameters){
       }
     }else if(currentState == 4){
       
-    }
+    }*/
   }
 }
 void dipswitchController( void *pvParameters){
@@ -368,7 +369,14 @@ if(right){
   // or smaller if value is larger then value Er value will be returned to be displayed
 
 int degreeToStep(int val){
-  int value = (val*2048)/360;
+  int value;
+  if(val > 0){
+  value = (val * 57)/10;
+  }else{
+    value = 0;
+  }
+  Serial.println(value);
+
   return value;
 }
 void intToSSD(int value ){
