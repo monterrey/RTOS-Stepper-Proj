@@ -56,6 +56,7 @@ void OneStep(bool dir);
 void setLEDS(int num, bool right);
 double readSensor(double* temperature);
 // Variable Declarations
+uint32_t ulongMax  = 4294967295;
 int tempHumidVal =0;
 int step_number =0;
 int currentState;// 0-5 , state 4,5 are block states 
@@ -193,7 +194,7 @@ void clockTask( void *pvParameters ){
   bool inOFState = false;
   for(;;){
     if ( defaultDisp.displayTime  > 0){
-      defaultDisp.displayTime -= 1;
+      //defaultDisp.displayTime = defaultDisp.displayTime -1;
     }
     vTaskDelay(oneSec);
 }
@@ -328,27 +329,37 @@ void dipswitchController( void *pvParameters){
   }
 }
 void displayTask( void *pvParameters){
-        struct SSDStruct * recvMsg;
-        int left = -1;
-        int right = -1;
-        for(;;){
-          if(defaultDisp.displayTime == 0 ){
-          if( xQueueReceive( xQueue, &( recvMsg ), ( TickType_t ) 0 ) ){
-        right = recvMsg->rightDigit;
-        left = recvMsg->leftDigit;
-        defaultDisp.displayTime = recvMsg->displayTime;
-        }
-          }
-          // Remove this temp sol
-          if(left ==-1 || right == -1){
-            left = defaultDisp.leftDigit;
-            right = defaultDisp.rightDigit;
-          }
-      setLEDS(left,false);
-      vTaskDelay(0);
-      setLEDS(right,true);
-      vTaskDelay(0); 
-        }
+  uint32_t ulNotifiedValue;
+  struct SSDStruct * recvMsg;
+  int left = -1;
+  int right = -1;
+  int displayTime = 0;
+  for(;;){
+    xTaskNotifyWait(0x00, // Bits Cleared on entry
+    ulongMax, // Reset the notification value on exit
+    &ulNotifiedValue, // Store my notification value here
+    0 // I wont block if no new notification
+    );
+    if((ulNotifiedValue & 1) != 0){
+      //defaultTime -= 1;
+    if(defaultDisp.displayTime == 0 ){
+      if( xQueueReceive( xQueue, &( recvMsg ), ( TickType_t ) 0 ) ){
+      right = recvMsg->rightDigit;
+      left = recvMsg->leftDigit;
+      defaultDisp.displayTime = recvMsg->displayTime;
+    }
+  }
+  }
+  // Remove this temp sol
+  if(left ==-1 || right == -1){
+    left = defaultDisp.leftDigit;
+    right = defaultDisp.rightDigit;
+    }
+    setLEDS(left,false);
+    vTaskDelay(0);
+    setLEDS(right,true);
+    vTaskDelay(0); 
+    }
 }
 
 // Functions 
